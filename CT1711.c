@@ -5,47 +5,46 @@
 float temp = 0;
 unsigned long data = 0;
 
-void delay_us(unsigned short int us)  //ÑÓÊ±º¯Êý£¬TIM3 1MHz 1us
+void delay_us(unsigned short int us)  //å»¶æ—¶å‡½æ•°ï¼ŒTIM3 1MHz 1us
 {
-	__HAL_TIM_SET_COUNTER(TIM_delay_us, 0);//³õÊ¼»¯TIM3
-	__HAL_TIM_ENABLE(TIM_delay_us);//Ê¹ÄÜTIM3
-	while (__HAL_TIM_GET_COUNTER(TIM_delay_us) < us) //ÑÓÊ±
+	__HAL_TIM_SET_COUNTER(TIM_delay_us, 0);//åˆå§‹åŒ–TIM3
+	__HAL_TIM_ENABLE(TIM_delay_us);//ä½¿èƒ½TIM3
+	while (__HAL_TIM_GET_COUNTER(TIM_delay_us) < us) //å»¶æ—¶
 	{
 		
 	}
-	__HAL_TIM_DISABLE(TIM_delay_us);//¹Ø±ÕTIM3
+	__HAL_TIM_DISABLE(TIM_delay_us);//å…³é—­TIM3
 }
 
 
 void ct1711_init(void)
 {
-	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,GPIO_PIN_SET);
-	
-HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,GPIO_PIN_RESET);//À­µÍ×ÜÏß
-delay_us(400);//ÑÓÊ±400us
-HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,GPIO_PIN_SET);//À­¸ß×ÜÏß,¿ªÂ©Êä³öÖÃÎ»¸ß×èÌ¬¶ÁÈ¡Òý½ÅÊý¾Ý
+	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,GPIO_PIN_SET);	
+	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,GPIO_PIN_RESET);//æ‹‰ä½Žæ€»çº¿
+	delay_us(400);//å»¶æ—¶400us
+	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,GPIO_PIN_SET);//æ‹‰é«˜æ€»çº¿,å¼€æ¼è¾“å‡ºç½®ä½é«˜é˜»æ€è¯»å–å¼•è„šæ•°æ®
 }
 
 unsigned long read_ct1711_data(void)
 {
-  data = 0;
+  	data = 0;
   
 	for(int i =0;i<19;i++)
 	{
 		HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,GPIO_PIN_RESET);
-	  HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,GPIO_PIN_SET);
+	  	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,GPIO_PIN_SET);
 		delay_us(16);
 	
 		if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_5) == GPIO_PIN_SET)
-    {
+    		{
 		    data<<=1;
 		    data+=1;
 		}
-	 else{
-	      data<<=1;
-	  }
+	 	else{
+	     	 data<<=1;
+	  	}
 	 
-	  HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,GPIO_PIN_SET);
+		HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,GPIO_PIN_SET);
 		delay_us(34);
 	}
 	
@@ -55,30 +54,28 @@ unsigned long read_ct1711_data(void)
 
 void StartgetTemp(void)
 {
-    ct1711_init();//CT1711³õÊ¼»¯
-	  __HAL_TIM_SET_COUNTER(TIM_delay_150ms, 0); //¶¨Ê±Æ÷Çå0
-	  HAL_TIM_Base_Start_IT(TIM_delay_150ms);//¿ªÊ¼¼ÆÊ±
+	ct1711_init();//CT1711åˆå§‹åŒ–
+	__HAL_TIM_SET_COUNTER(TIM_delay_150ms, 0); //å®šæ—¶å™¨æ¸…0
+	HAL_TIM_Base_Start_IT(TIM_delay_150ms);//å¼€å§‹è®¡æ—¶
 }
 
 
-float getTemp(void) //»ñÈ¡ÎÂ¶È
+float getTemp(void) //èŽ·å–æ¸©åº¦
 {
-	HAL_TIM_Base_Stop_IT(TIM_delay_150ms); //Çå¿Õ¶¨Ê±Æ÷
+	HAL_TIM_Base_Stop_IT(TIM_delay_150ms); //æ¸…ç©ºå®šæ—¶å™¨
+	unsigned long temp_data = 0;   //å®šä¹‰å±€éƒ¨å˜é‡æ¸©åº¦æ•°æ®ä½
+	unsigned long temp_vaule = 0;  //å®šä¹‰å±€éƒ¨å˜é‡æ¸©åº¦æ•°å€¼
+	temp_data =  read_ct1711_data();//è¯»å–CT1711çš„19bitæ•°æ®
+	temp_vaule = temp_data & 0x0000FFFF; //æå–17bitæ•°æ®
 	
-unsigned long temp_data = 0;   //¶¨Òå¾Ö²¿±äÁ¿ÎÂ¶ÈÊý¾ÝÎ»
-unsigned long temp_vaule = 0;  //¶¨Òå¾Ö²¿±äÁ¿ÎÂ¶ÈÊýÖµ
-temp_data =  read_ct1711_data();//¶ÁÈ¡CT1711µÄ19bitÊý¾Ý
-temp_vaule = temp_data & 0x0000FFFF; //ÌáÈ¡17bitÊý¾Ý
-	
-	if((temp_data & 0x00060000) == 0x00000000) //ÅÐ¶ÏÊý¾ÝÊÇ·ñÓÐÐ§
-		{
-	   if ((temp_data & 0x00010000) == 0x00000000)  //ÅÐ¶ÏÊý¾ÝÕý¸º
-			      temp =  temp_vaule  * Sensor_resolution;
-		    else
-					  temp =  -temp_vaule * Sensor_resolution;
-			}
-
-return temp;
+	if((temp_data & 0x00060000) == 0x00000000) //åˆ¤æ–­æ•°æ®æ˜¯å¦æœ‰æ•ˆ
+	{
+		if ((temp_data & 0x00010000) == 0x00000000)  //åˆ¤æ–­æ•°æ®æ­£è´Ÿ
+			temp =  temp_vaule  * Sensor_resolution;
+		else
+			temp =  -temp_vaule * Sensor_resolution;
+	}
+	return temp;
 }
 
 	
